@@ -85,10 +85,15 @@ jobs:
           EOF
 
       - name: Download Audio (if URL provided via secret)
-        if: ${{ secrets.AUDIO_URL != '' }}
+        env:
+          AUDIO_URL: ${{ secrets.AUDIO_URL }}
         run: |
-          echo "Downloading audio from AUDIO_URL secret..."
-          curl -L "${{ secrets.AUDIO_URL }}" -o input_audio.mp3
+          if [ -n "$AUDIO_URL" ]; then
+            echo "Downloading audio from AUDIO_URL secret..."
+            curl -L "$AUDIO_URL" -o input_audio.mp3
+          else
+            echo "No AUDIO_URL secret provided."
+          fi
 
       - name: Render video frames with Node.js canvas
         run: |
