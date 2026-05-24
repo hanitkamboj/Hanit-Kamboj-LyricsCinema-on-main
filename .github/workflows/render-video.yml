@@ -204,7 +204,7 @@ jobs:
           echo "| Artist | ${{ github.event.inputs.artist_name }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Resolution | ${{ github.event.inputs.resolution }} |" >> $GITHUB_STEP_SUMMARY
           echo "| FPS | ${{ github.event.inputs.fps }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Audio URL | ${{ github.event.inputs.audio_url != '' && 'Provided' || 'None' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Audio URL | ${{ github.event.inputs.audio_url }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Download the video from the **Artifacts** section at the bottom of the workflow run summary page ⬆️" >> $GITHUB_STEP_SUMMARY
           echo "Your artifact is named: **lyrics-video-${{ github.event.inputs.song_title }}-${{ github.event.inputs.resolution }}**" >> $GITHUB_STEP_SUMMARY
