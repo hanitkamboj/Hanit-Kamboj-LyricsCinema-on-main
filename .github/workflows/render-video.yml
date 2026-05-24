@@ -15,6 +15,10 @@ on:
         description: 'Album Name (optional)'
         required: false
         default: ''
+      audio_url:
+        description: 'Audio URL (optional, direct link to mp3/wav)'
+        required: false
+        default: ''
       resolution:
         description: 'Resolution (1920x1080 or 1280x720 or 3840x2160)'
         required: true
@@ -84,15 +88,15 @@ jobs:
               sys.exit(1)
           EOF
 
-      - name: Download Audio (if URL provided via secret)
+      - name: Download Audio (if URL provided)
         env:
-          AUDIO_URL: ${{ secrets.AUDIO_URL }}
+          AUDIO_URL: ${{ github.event.inputs.audio_url }}
         run: |
           if [ -n "$AUDIO_URL" ]; then
-            echo "Downloading audio from AUDIO_URL secret..."
+            echo "Downloading audio from provided URL..."
             curl -L "$AUDIO_URL" -o input_audio.mp3
           else
-            echo "No AUDIO_URL secret provided."
+            echo "No audio URL provided, video won't have the original song audio."
           fi
 
       - name: Render video frames with Node.js canvas
@@ -178,6 +182,7 @@ jobs:
           echo "✓ Video generation step complete"
 
       - name: Upload video artifact
+        id: upload_video
         uses: actions/upload-artifact@v4
         with:
           name: lyrics-video-${{ github.event.inputs.song_title }}-${{ github.event.inputs.resolution }}
@@ -199,7 +204,9 @@ jobs:
           echo "| Artist | ${{ github.event.inputs.artist_name }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Resolution | ${{ github.event.inputs.resolution }} |" >> $GITHUB_STEP_SUMMARY
           echo "| FPS | ${{ github.event.inputs.fps }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Audio URL | ${{ github.event.inputs.audio_url != '' && 'Provided' || 'None' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Download the video from the **Artifacts** section above ⬆️" >> $GITHUB_STEP_SUMMARY
+          echo "Download the video from the **Artifacts** section at the bottom of the workflow run summary page ⬆️" >> $GITHUB_STEP_SUMMARY
+          echo "Your artifact is named: **lyrics-video-${{ github.event.inputs.song_title }}-${{ github.event.inputs.resolution }}**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Free tier**: GitHub Actions gives 2,000 minutes/month — no credit card needed!" >> $GITHUB_STEP_SUMMARY
