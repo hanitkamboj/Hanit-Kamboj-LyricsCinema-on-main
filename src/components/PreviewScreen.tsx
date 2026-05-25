@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useStore } from '../store/useStore';
 import VideoPreview from './VideoPreview';
-import ExportPanel from './ExportPanel';
-import LyricsEditor from './LyricsEditor';
 
 const PreviewScreen: React.FC = () => {
-  const { setStep, songMeta, lyrics } = useStore();
-  const [showExport, setShowExport] = useState(false);
+  const { setStep, songMeta, lyrics, isFullscreen, setFullscreen } = useStore();
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [setFullscreen]);
 
   return (
     <div
@@ -122,12 +127,21 @@ const PreviewScreen: React.FC = () => {
             </span>
           )}
           <button
-            onClick={() => setShowExport(!showExport)}
+            onClick={() => {
+              const el = document.getElementById('video-preview-container');
+              if (el) {
+                if (document.fullscreenElement) {
+                  document.exitFullscreen();
+                } else {
+                  el.requestFullscreen();
+                }
+              }
+            }}
             style={{
               padding: '0.42rem 1rem',
               borderRadius: '10px',
               border: 'none',
-              background: showExport
+              background: isFullscreen
                 ? 'linear-gradient(135deg, #7c3aed, #4f46e5)'
                 : 'rgba(255,255,255,0.1)',
               color: '#fff',
@@ -135,10 +149,10 @@ const PreviewScreen: React.FC = () => {
               fontSize: '0.8rem',
               fontWeight: 700,
               transition: 'all 0.2s',
-              boxShadow: showExport ? '0 4px 16px rgba(124,58,237,0.35)' : 'none',
+              boxShadow: isFullscreen ? '0 4px 16px rgba(124,58,237,0.35)' : 'none',
             }}
           >
-            {showExport ? '✕ Close' : '🎬 Export'}
+            {isFullscreen ? '✕ Exit Fullscreen' : '⛶ Fullscreen'}
           </button>
         </div>
       </div>
@@ -148,7 +162,7 @@ const PreviewScreen: React.FC = () => {
         style={{
           flex: 1,
           display: 'grid',
-          gridTemplateColumns: showExport ? 'minmax(0,1fr) 300px' : '1fr',
+          gridTemplateColumns: '1fr',
           gap: '1rem',
           alignItems: 'start',
           transition: 'grid-template-columns 0.3s ease',
@@ -158,54 +172,6 @@ const PreviewScreen: React.FC = () => {
         <div>
           <VideoPreview />
         </div>
-
-        {/* Export panel */}
-        {showExport && (
-          <div
-            style={{
-              position: 'sticky',
-              top: '1rem',
-              maxHeight: 'calc(100vh - 4rem)',
-              overflowY: 'auto',
-              scrollbarWidth: 'none',
-            }}
-          >
-            <ExportPanel />
-
-            {/* Lyrics timing editor */}
-            <LyricsEditor />
-
-            {/* GitHub Actions info */}
-            <div
-              style={{
-                marginTop: '1rem',
-                background: 'rgba(255,255,255,0.025)',
-                borderRadius: '14px',
-                border: '1px solid rgba(255,255,255,0.06)',
-                padding: '1rem',
-                fontSize: '0.72rem',
-                color: 'rgba(255,255,255,0.38)',
-                lineHeight: 1.75,
-              }}
-            >
-              <div style={{ color: 'rgba(255,255,255,0.65)', fontWeight: 700, marginBottom: '0.5rem', fontSize: '0.8rem' }}>
-                🚀 Free Cloud Rendering via GitHub Actions
-              </div>
-              <p>
-                GitHub gives <strong style={{ color: 'rgba(255,255,255,0.55)' }}>2,000 free minutes/month</strong> (no credit card).
-                Fork this repo, push your files, trigger the render workflow — download your MP4 from artifacts.
-              </p>
-              <br/>
-              <strong style={{ color: 'rgba(255,255,255,0.55)' }}>Free Deploy Platforms:</strong>
-              <ul style={{ marginTop: '0.4rem', paddingLeft: '1rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                <li>▸ <strong style={{ color: 'rgba(255,255,255,0.5)' }}>Vercel</strong> — instant deploy from GitHub</li>
-                <li>▸ <strong style={{ color: 'rgba(255,255,255,0.5)' }}>Netlify</strong> — drag & drop or GitHub CI</li>
-                <li>▸ <strong style={{ color: 'rgba(255,255,255,0.5)' }}>Cloudflare Pages</strong> — global CDN, free</li>
-                <li>▸ <strong style={{ color: 'rgba(255,255,255,0.5)' }}>GitHub Pages</strong> — static host from repo</li>
-              </ul>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
