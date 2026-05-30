@@ -76,7 +76,10 @@ const VideoPreview: React.FC<Props> = ({ forExport = false }) => {
     }
   }, [setDuration]);
 
-  const handleEnded = useCallback(() => setPlaying(false), [setPlaying]);
+  const handleEnded = useCallback(() => {
+    setPlaying(false);
+    window.dispatchEvent(new Event('audio-ended'));
+  }, [setPlaying]);
 
   const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
@@ -153,6 +156,21 @@ const VideoPreview: React.FC<Props> = ({ forExport = false }) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [duration, setCurrentTime, setPlaying]);
+
+  useEffect(() => {
+    const handlePrepare = () => {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        setCurrentTime(0);
+        setPlaying(false);
+        // Hide controls immediately for clean recording
+        setShowControls(false);
+      }
+    };
+    
+    window.addEventListener('prepare-recording', handlePrepare);
+    return () => window.removeEventListener('prepare-recording', handlePrepare);
+  }, [setCurrentTime, setPlaying]);
 
   useEffect(() => {
     if (!isPlaying) {

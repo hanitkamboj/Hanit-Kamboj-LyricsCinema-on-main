@@ -5,6 +5,9 @@ import VideoPreview from './VideoPreview';
 const PreviewScreen: React.FC = () => {
   const { setStep, songMeta, lyrics, isFullscreen, setFullscreen } = useStore();
 
+  const [isRecording, setIsRecording] = React.useState(false);
+  const activeStreamRef = React.useRef<MediaStream | null>(null);
+
   React.useEffect(() => {
     const handleFullscreenChange = () => {
       setFullscreen(!!document.fullscreenElement);
@@ -12,6 +15,14 @@ const PreviewScreen: React.FC = () => {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, [setFullscreen]);
+
+  const stopRecording = () => {
+    if (activeStreamRef.current) {
+      activeStreamRef.current.getTracks().forEach(t => t.stop());
+      activeStreamRef.current = null;
+    }
+    setIsRecording(false);
+  };
 
   return (
     <div
@@ -126,6 +137,95 @@ const PreviewScreen: React.FC = () => {
               {lyrics.source}
             </span>
           )}
+          <button
+            onClick={async () => {
+              if (isRecording) {
+                stopRecording();
+                return;
+              }
+              try {
+                // @ts-ignore
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                  video: { displaySurface: 'browser' },
+                  audio: true,
+                });
+                activeStreamRef.current = stream;
+                setIsRecording(true);
+                
+                const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+                const chunks: Blob[] = [];
+                recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+                recorder.onstop = () => {
+                  const blob = new Blob(chunks, { type: 'video/webm' });
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = `LyricCinema-${songMeta.title || 'Export'}.webm`;
+                  a.click();
+                  stopRecording();
+                };
+                
+                // User clicked native "Stop sharing"
+                stream.getVideoTracks()[0].addEventListener('ended', () => {
+                  if (recorder.state === 'recording') recorder.stop();
+                  stopRecording();
+                });
+                
+                // Go fullscreen for perfect 16:9
+                const el = document.getElementById('video-preview-container');
+                if (el && !document.fullscreenElement) {
+                  await el.requestFullscreen();
+                }
+                
+                recorder.start();
+                // Send event to reset player (but do not auto-play)
+                setTimeout(() => window.dispatchEvent(new Event('prepare-recording')), 800);
+                
+                // Auto-stop when audio ends
+                window.addEventListener('audio-ended', () => {
+                  if (recorder.state === 'recording') recorder.stop();
+                  stopRecording();
+                }, { once: true });
+                
+              } catch (err: any) {
+                setIsRecording(false);
+                if (err.name === 'NotAllowedError') {
+                  // User cancelled the prompt, no need to alert
+                  console.log('Recording cancelled by user');
+                } else {
+                  console.error('Failed to start recording:', err);
+                  alert('Recording failed. If you are in the AI Studio preview, please click "Open in New Tab" at the top right, as screen recording may be restricted inside the preview frame.');
+                }
+              }
+            }}
+            style={{
+              padding: '0.42rem 1rem',
+              borderRadius: '10px',
+              border: 'none',
+              background: isRecording ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'linear-gradient(135deg, #ef4444, #dc2626)',
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              transition: 'all 0.2s',
+              boxShadow: isRecording ? '0 4px 16px rgba(59,130,246,0.3)' : '0 4px 16px rgba(220,38,38,0.3)',
+            }}
+          >
+            {isRecording ? (
+              <>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '2px', background: '#fff' }} />
+                Stop Recording
+              </>
+            ) : (
+              <>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#fff', animation: 'pulse 2s infinite' }} />
+                Record Screen (HD)
+              </>
+            )}
+          </button>
+          
           <button
             onClick={() => {
               const el = document.getElementById('video-preview-container');

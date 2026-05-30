@@ -1,6 +1,6 @@
 {
   "name": "Lyric Video Maker",
   "description": "Apple Music-style lyrical video maker with TTML/word-sync support and Remotion architecture.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["display-capture"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
