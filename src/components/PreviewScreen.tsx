@@ -137,6 +137,7 @@ const PreviewScreen: React.FC = () => {
               {lyrics.source}
             </span>
           )}
+          
           <button
             onClick={async () => {
               if (isRecording) {
@@ -278,3 +279,4 @@ const PreviewScreen: React.FC = () => {
 };
 
 export default PreviewScreen;
+

@@ -2,6 +2,7 @@ export interface LyricWord {
   word: string;
   startTime: number; // seconds
   endTime: number;   // seconds
+  isBg?: boolean;
 }
 
 export interface LyricLine {
@@ -9,8 +10,7 @@ export interface LyricLine {
   endTime?: number;      // seconds (optional, computed from next line or duration)
   text: string;
   words?: LyricWord[];   // for TTML / Enhanced LRC word-level sync
-  isActive?: boolean;
-  isPast?: boolean;
+  isBg?: boolean;
 }
 
 export type LyricsSource = 'fetched' | 'lrc' | 'srt' | 'ttml' | 'manual';

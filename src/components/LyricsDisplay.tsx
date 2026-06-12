@@ -15,6 +15,7 @@ const WordHighlight: React.FC<{
 }> = React.memo(({ word, currentTime, lineActive }) => {
   const isActive = lineActive && currentTime >= word.startTime && currentTime < word.endTime;
   const isPast = lineActive ? currentTime >= word.endTime : false;
+  const isBg = word.isBg;
 
   const progress =
     isActive && word.endTime > word.startTime
@@ -28,7 +29,7 @@ const WordHighlight: React.FC<{
         transition: isActive
           ? 'transform 0.12s cubic-bezier(0.34,1.56,0.64,1)'
           : 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
-        transform: isActive ? 'scale(1.07) translateY(-1px)' : 'scale(1) translateY(0)',
+        transform: isActive && !isBg ? 'scale(1.07) translateY(-1px)' : 'scale(1) translateY(0)',
         transformOrigin: 'center bottom',
         marginRight: '0.3em',
         willChange: 'transform',
@@ -41,7 +42,7 @@ const WordHighlight: React.FC<{
         aria-hidden
         style={{
           color: isPast
-            ? 'rgba(255,255,255,0.78)'
+            ? (isBg ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.78)')
             : lineActive
             ? 'rgba(255,255,255,0.22)'
             : 'rgba(255,255,255,0.22)',
@@ -65,7 +66,7 @@ const WordHighlight: React.FC<{
             overflow: 'hidden',
             whiteSpace: 'nowrap',
             color: '#ffffff',
-            textShadow: isActive
+            textShadow: isActive && !isBg
               ? '0 0 18px rgba(255,255,255,1), 0 0 36px rgba(255,255,255,0.5), 0 0 60px rgba(255,255,255,0.25)'
               : 'none',
             pointerEvents: 'none',
@@ -125,17 +126,22 @@ const LyricLineItem: React.FC<{
   const style = getLineStyle(status);
   const isActive = status === 'active';
   const hasWordSync = syncMode === 'word' && line.words && line.words.length > 0;
+  const isBg = line.isBg;
+
+  // Background vocals are smaller and often italic/dimmer
+  const fontSize = isBg ? baseFontSize * 0.75 : baseFontSize;
+  const fontStyle = isBg ? 'italic' : 'normal';
 
   return (
     <div
       data-line-index={index}
-      className="lyrics-line"
+      className={`lyrics-line ${isBg ? 'bg-lyric' : ''}`}
       style={{
-        opacity: style.opacity,
+        opacity: isBg && isActive ? 0.8 : style.opacity,
         filter: style.filter,
-        transform: `${style.transform}`,
+        transform: `${style.transform} ${isBg ? 'scale(0.9)' : ''}`,
         transformOrigin: 'left center',
-        fontWeight: style.fontWeight,
+        fontWeight: isBg ? 500 : style.fontWeight,
         transition: [
           'opacity 0.5s cubic-bezier(0.4,0,0.2,1)',
           'filter 0.5s cubic-bezier(0.4,0,0.2,1)',
@@ -144,16 +150,20 @@ const LyricLineItem: React.FC<{
         willChange: 'transform, opacity, filter',
         marginBottom: `${baseFontSize * 0.6}px`,
         lineHeight: 1.25,
-        fontSize: `${baseFontSize}px`,
+        fontSize: `${fontSize}px`,
+        fontStyle,
+        color: isBg ? 'rgba(255,255,255,0.7)' : 'inherit',
         fontFamily: "'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         letterSpacing: '-0.015em',
         userSelect: 'none',
         cursor: 'default',
-        textShadow: isActive ? '0 2px 20px rgba(255,255,255,0.15)' : 'none',
+        textShadow: isActive && !isBg ? '0 2px 20px rgba(255,255,255,0.15)' : 'none',
+        textAlign: isBg ? 'right' : 'left', // often BG vocals are aligned to the right or indented
+        paddingLeft: isBg ? '2rem' : '0',
       }}
     >
       {hasWordSync ? (
-        <span style={{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 0 }}>
+        <span style={{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 0, justifyContent: isBg ? 'flex-end' : 'flex-start', width: '100%' }}>
           {line.words!.map((word, wi) => (
             <WordHighlight
               key={wi}
@@ -168,7 +178,7 @@ const LyricLineItem: React.FC<{
           style={{
             color: style.color,
             transition: 'color 0.4s ease, text-shadow 0.4s ease',
-            textShadow: isActive ? '0 0 30px rgba(255,255,255,0.25)' : 'none',
+            textShadow: isActive && !isBg ? '0 0 30px rgba(255,255,255,0.25)' : 'none',
           }}
         >
           {line.text}

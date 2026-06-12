@@ -2,6 +2,7 @@ import React, { useCallback, useState, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { autoParseFile } from '../utils/parsers';
 import { fetchLyrics } from '../utils/lrclib';
+import { fetchSpotifyData } from '../utils/spotify';
 import { extractColors } from '../utils/colorExtract';
 
 // ─── Drop Zone ─────────────────────────────────────────────────────────────
@@ -189,7 +190,8 @@ const UploadStep: React.FC = () => {
 
   const [lyricsFileName, setLyricsFileName] = useState<string | null>(null);
   const [customLyrics, setCustomLyrics] = useState('');
-  const [lyricsMode, setLyricsMode] = useState<'auto' | 'upload' | 'manual'>('auto');
+  const [spotifyUrl, setSpotifyUrl] = useState('');
+  const [lyricsMode, setLyricsMode] = useState<'auto' | 'spotify' | 'upload' | 'manual'>('auto');
 
   const handleAudio = useCallback(
     async (file: File) => {
@@ -261,6 +263,54 @@ const UploadStep: React.FC = () => {
     setLyrics(parsed);
     setFetchError(null);
   }, [customLyrics, setLyrics, setFetchError]);
+
+  const handleFetchSpotifyUrl = useCallback(async () => {
+    if (!spotifyUrl.trim()) {
+      setFetchError('Please enter a valid Spotify URL.');
+      return;
+    }
+    setFetchingLyrics(true);
+    setFetchError(null);
+    try {
+      const result = await fetchSpotifyData(spotifyUrl);
+      if (result && result.data) {
+        setSongMeta({
+          title: result.data.songName,
+          artist: result.data.artistName,
+          album: result.data.albumName || '',
+        });
+        if (result.data.imageUrl) {
+          setArtwork(null, result.data.imageUrl);
+          try {
+            const colors = await extractColors(result.data.imageUrl);
+            setColors(colors);
+          } catch (e) {
+            console.warn('Could not extract colors from Spotify image URL', e);
+          }
+        }
+      }
+      if (result && result.lyrics) {
+        let plainText = '';
+        if (result.lyrics.syncedLyrics && result.lyrics.syncedLyrics.length > 0) {
+          plainText = Array.isArray(result.lyrics.syncedLyrics) 
+            ? result.lyrics.syncedLyrics.join('\n') 
+            : result.lyrics.syncedLyrics;
+        }
+
+        if (plainText) {
+          const parsed = autoParseFile(plainText, 'spotify.lrc');
+          parsed.source = 'spotify';
+          setLyrics(parsed);
+        } else {
+          setFetchError('No synced lyrics found for this Spotify track.');
+        }
+      }
+    } catch (err) {
+      setFetchError('Failed to fetch from Spotify API.');
+    } finally {
+      setFetchingLyrics(false);
+    }
+  }, [spotifyUrl, setFetchingLyrics, setFetchError, setSongMeta, setArtwork, setColors, setLyrics]);
 
   const canProceed = !!audioFile && !!lyrics;
 
@@ -391,6 +441,7 @@ const UploadStep: React.FC = () => {
             {(
               [
                 { id: 'auto', icon: '🔍', label: 'Auto-Fetch' },
+                { id: 'spotify', icon: '🔗', label: 'Spotify URL' },
                 { id: 'upload', icon: '📁', label: 'Upload File' },
                 { id: 'manual', icon: '✏️', label: 'Paste / Write' },
               ] as const
@@ -420,6 +471,105 @@ const UploadStep: React.FC = () => {
               </button>
             ))}
           </div>
+
+          {/* Spotify panel */}
+          {lyricsMode === 'spotify' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                Paste a <strong style={{ color: '#1db954' }}>Spotify Track URL</strong> to automatically fetch metadata,
+                cover art, and time-synced lyrics.
+              </p>
+              <InputField
+                label="Spotify URL"
+                value={spotifyUrl}
+                onChange={setSpotifyUrl}
+                placeholder="https://open.spotify.com/track/..."
+              />
+              <button
+                onClick={handleFetchSpotifyUrl}
+                disabled={isFetchingLyrics}
+                style={{
+                  padding: '0.62rem 1.4rem',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: isFetchingLyrics
+                    ? 'rgba(29,185,84,0.3)'
+                    : '#1db954',
+                  color: '#fff',
+                  cursor: isFetchingLyrics ? 'not-allowed' : 'pointer',
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.2s',
+                  fontFamily: "'SF Pro Text', 'Inter', sans-serif",
+                  alignSelf: 'flex-start',
+                }}
+              >
+                {isFetchingLyrics ? (
+                  <>
+                    <span style={{ display: 'inline-block', animation: 'spin 0.8s linear infinite' }}>
+                      ◌
+                    </span>
+                    Extracting…
+                  </>
+                ) : (
+                  '🔗 Extract from Spotify'
+                )}
+              </button>
+              
+              {lyrics && lyrics.source === 'spotify' && (
+                <button
+                  onClick={() => {
+                    const content = lyrics.lines.map(l => {
+                       const m = Math.floor(l.startTime / 60).toString().padStart(2, '0');
+                       const s = Math.floor(l.startTime % 60).toString().padStart(2, '0');
+                       const ms = Math.floor((l.startTime % 1) * 100).toString().padStart(2, '0');
+                       return `[${m}:${s}.${ms}] ${l.text}`;
+                    }).join('\n');
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    const cleanTitle = (songMeta.title || 'Unknown').replace(/[\\/:*?"<>|]/g, '');
+                    const cleanArtist = (songMeta.artist || 'Unknown').replace(/[\\/:*?"<>|]/g, '');
+                    a.download = `${cleanTitle} - ${cleanArtist}.lrc`;
+                    a.click();
+                  }}
+                  style={{
+                    padding: '0.55rem 1.2rem',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(255,255,255,0.05)',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    alignSelf: 'flex-start',
+                    fontFamily: "'SF Pro Text', 'Inter', sans-serif",
+                  }}
+                >
+                  ⬇️ Download .LRC File
+                </button>
+              )}
+
+              {fetchError && (
+                <div
+                  style={{
+                    background: 'rgba(239,68,68,0.08)',
+                    borderRadius: '10px',
+                    padding: '0.6rem 0.85rem',
+                    border: '1px solid rgba(239,68,68,0.2)',
+                    color: '#fca5a5',
+                    fontSize: '0.78rem',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  ⚠️ {fetchError}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Auto-fetch panel */}
           {lyricsMode === 'auto' && (

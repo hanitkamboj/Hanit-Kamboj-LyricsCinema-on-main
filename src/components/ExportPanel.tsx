@@ -455,95 +455,96 @@ const ExportPanel: React.FC = () => {
         🎬 Export Video
       </div>
 
-      {/* Resolution preset */}
-      <div>
-        <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-          Resolution
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {PRESETS.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => setSettings((s) => ({ ...s, width: p.width, height: p.height }))}
-              style={{
-                padding: '0.4rem 0.85rem',
-                borderRadius: '20px',
-                border: 'none',
-                background:
-                  settings.width === p.width
-                    ? 'rgba(255,255,255,0.22)'
-                    : 'rgba(255,255,255,0.07)',
-                color: settings.width === p.width ? '#fff' : 'rgba(255,255,255,0.5)',
-                cursor: 'pointer',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                transition: 'all 0.2s',
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* FPS + Quality */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+        {/* Resolution preset */}
         <div>
           <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-            Frame Rate
+            Resolution
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {[24, 30, 60].map((fps) => (
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {PRESETS.map((p) => (
               <button
-                key={fps}
-                onClick={() => setSettings((s) => ({ ...s, fps }))}
+                key={p.label}
+                onClick={() => setSettings((s) => ({ ...s, width: p.width, height: p.height }))}
                 style={{
-                  flex: 1,
-                  padding: '0.4rem',
-                  borderRadius: '8px',
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '20px',
                   border: 'none',
-                  background: settings.fps === fps ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)',
-                  color: settings.fps === fps ? '#fff' : 'rgba(255,255,255,0.5)',
+                  background:
+                    settings.width === p.width
+                      ? 'rgba(255,255,255,0.22)'
+                      : 'rgba(255,255,255,0.07)',
+                  color: settings.width === p.width ? '#fff' : 'rgba(255,255,255,0.5)',
                   cursor: 'pointer',
                   fontSize: '0.78rem',
                   fontWeight: 600,
+                  transition: 'all 0.2s',
                 }}
               >
-                {fps}fps
+                {p.label}
               </button>
             ))}
           </div>
         </div>
-        <div>
-          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-            Quality
+
+        {/* FPS + Quality */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+              Frame Rate
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {[24, 30, 60].map((fps) => (
+                <button
+                  key={fps}
+                  onClick={() => setSettings((s) => ({ ...s, fps }))}
+                  style={{
+                    flex: 1,
+                    padding: '0.4rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: settings.fps === fps ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)',
+                    color: settings.fps === fps ? '#fff' : 'rgba(255,255,255,0.5)',
+                    cursor: 'pointer',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  {fps}fps
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {(['high', 'medium', 'low'] as const).map((q) => (
-              <button
-                key={q}
-                onClick={() => setSettings((s) => ({ ...s, quality: q }))}
-                style={{
-                  flex: 1,
-                  padding: '0.4rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: settings.quality === q ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)',
-                  color: settings.quality === q ? '#fff' : 'rgba(255,255,255,0.5)',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  textTransform: 'capitalize',
-                }}
-              >
-                {q}
-              </button>
-            ))}
+          <div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+              Quality
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {(['high', 'medium', 'low'] as const).map((q) => (
+                <button
+                  key={q}
+                  onClick={() => setSettings((s) => ({ ...s, quality: q }))}
+                  style={{
+                    flex: 1,
+                    padding: '0.4rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: settings.quality === q ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)',
+                    color: settings.quality === q ? '#fff' : 'rgba(255,255,255,0.5)',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Note about memory */}
       <div style={{ background: 'rgba(251,191,36,0.08)', borderRadius: '10px', padding: '0.65rem 0.85rem', border: '1px solid rgba(251,191,36,0.2)' }}>
         <div style={{ color: 'rgba(251,191,36,0.9)', fontSize: '0.75rem', lineHeight: 1.5 }}>
           ⚡ Runs in your browser via WebAssembly. 1080p@30fps works best. For 4K long videos, use GitHub Actions (see README for free server rendering).
@@ -617,7 +618,7 @@ const ExportPanel: React.FC = () => {
       {downloadUrl && (
         <a
           href={downloadUrl}
-          download={`${songMeta.title || 'lyrics-video'}-${settings.width}x${settings.height}.mp4`}
+          download={`${songMeta.title || 'lyrics-video'}-${settings.res === 'custom' ? `${settings.customW}x${settings.customH}` : settings.res}.webm`}
           style={{
             display: 'flex',
             alignItems: 'center',

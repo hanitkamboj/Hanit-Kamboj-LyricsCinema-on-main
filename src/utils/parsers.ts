@@ -156,10 +156,14 @@ export function parseTTML(content: string): LyricsData {
       const words: LyricWord[] = [];
       let lineText = '';
 
+      const isPLineBg = p.getAttribute('ttm:role') === 'x-bg';
+
       if (spans.length > 0) {
         spans.forEach((span) => {
           const wBegin = span.getAttribute('begin') || span.getAttribute('xml:begin') || '';
           const wEnd = span.getAttribute('end') || span.getAttribute('xml:end') || '';
+          const role = span.getAttribute('ttm:role');
+          const isBg = role === 'x-bg' || isPLineBg;
           const wText = span.textContent?.trim() || '';
           if (wText) {
             lineText += (lineText ? ' ' : '') + wText;
@@ -169,6 +173,7 @@ export function parseTTML(content: string): LyricsData {
                 word: wText,
                 startTime: parseTTMLTime(wBegin),
                 endTime: wEnd ? parseTTMLTime(wEnd) : parseTTMLTime(wBegin) + 0.5,
+                isBg
               });
             }
           }
@@ -183,6 +188,7 @@ export function parseTTML(content: string): LyricsData {
           endTime: endTime || undefined,
           text: lineText,
           words: words.length > 0 ? words : undefined,
+          isBg: isPLineBg,
         });
       }
     });
